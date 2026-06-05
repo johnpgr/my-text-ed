@@ -45,24 +45,22 @@ main :: proc() {
 	}
     defer if has_file { buffer.destroy(&text_buf, allocator) }
 
-	{
-		scratch_arena, temp_allocator := arena.begin_scratch(&main_arena)
-		defer arena.end_scratch(scratch_arena)
-		context.temp_allocator = temp_allocator
+    scratch_arena, temp_allocator := arena.begin_scratch(&main_arena)
+    context.temp_allocator = temp_allocator
 
-		p.window.title = "my-text-ed"
-		p.window.size = {960, 540}
-		p.window.resizable = true
-		p.opengl.major = 4
-		p.opengl.minor = 6
-		p.opengl.debug_context = true
-		p.opengl.vsync = true
+    p.window.title = "my-text-ed"
+    p.window.size = {960, 540}
+    p.window.resizable = true
+    p.opengl.major = 4
+    p.opengl.minor = 6
+    p.opengl.debug_context = true
+    p.opengl.vsync = true
 
-		if !platform.init(&p) {
-			fmt.eprintln("Failed to initialize platform")
-			os.exit(1)
-		}
-	}
+    if !platform.init(&p) {
+        fmt.eprintln("Failed to initialize platform")
+        os.exit(1)
+    }
+    arena.end_scratch(scratch_arena)
 
 	defer platform.shutdown()
 

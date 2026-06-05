@@ -3,7 +3,8 @@ package font
 import stbtt "vendor:stb/truetype"
 
 // DEFAULT_FONT_PATH :: "/home/joao/.fonts/liberation-fonts-ttf-1.05.3.20100621/LiberationMono-Regular.ttf"
-DEFAULT_FONT_PATH :: "C:\\Users\\Joao\\AppData\\Local\\Microsoft\\Windows\\Fonts\\LiberationMono-Regular.ttf"
+// DEFAULT_FONT_PATH :: "C:\\Users\\Joao\\AppData\\Local\\Microsoft\\Windows\\Fonts\\LiberationMono-Regular.ttf"
+DEFAULT_FONT_PATH :: "C:\\Windows\\Fonts\\consola.ttf"
 
 BAND_TEXTURE_WIDTH_LOG2 :: 12
 BAND_TEXTURE_WIDTH :: 1 << BAND_TEXTURE_WIDTH_LOG2 // 4096
