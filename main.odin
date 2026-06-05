@@ -16,6 +16,10 @@ r: renderer.Renderer_Api
 
 FALLBACK_TEXT :: "my-text-ed: pass a file path to render text (e.g. TODO.md)"
 
+MIN_FONT_SIZE :: f32(8)
+MAX_FONT_SIZE :: f32(256)
+FONT_ZOOM_STEP :: f32(2)
+
 main :: proc() {
 	main_arena: virtual.Arena
 	allocator, err := arena.init(&main_arena, 1 * mem.Gigabyte)
@@ -39,11 +43,7 @@ main :: proc() {
 		}
 		has_file = true
 	}
-	defer {
-		if has_file {
-			buffer.destroy(&text_buf, allocator)
-		}
-	}
+    defer if has_file { buffer.destroy(&text_buf, allocator) }
 
 	{
 		scratch_arena, temp_allocator := arena.begin_scratch(&main_arena)
@@ -104,7 +104,17 @@ main :: proc() {
 		line_h := renderer.line_height(&r)
 		scroll_delta: f32 = 0
 
-		if p.mouse.wheel_delta != 0 {
+		if p.mouse.wheel_delta != 0 && p.input.control {
+			old_line_h := line_h
+			mouse_y := f32(p.mouse.position.y)
+			anchor_line := (mouse_y + r.view.scroll_y) / old_line_h
+
+			new_font_size := r.style.font_size + p.mouse.wheel_delta * FONT_ZOOM_STEP
+			r.style.font_size = clamp(new_font_size, MIN_FONT_SIZE, MAX_FONT_SIZE)
+
+			line_h = renderer.line_height(&r)
+			r.view.scroll_y = anchor_line * line_h - mouse_y
+		} else if p.mouse.wheel_delta != 0 {
 			scroll_delta -= p.mouse.wheel_delta * line_h * 3
 		}
 		if p.keys[platform.Key_Code.Page_Up].is_pressed {
