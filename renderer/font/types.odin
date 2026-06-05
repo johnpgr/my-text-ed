@@ -1,4 +1,4 @@
-package renderer
+package font
 
 import stbtt "vendor:stb/truetype"
 

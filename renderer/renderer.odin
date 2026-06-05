@@ -1,5 +1,7 @@
 package renderer
 
+import rfont "font"
+
 MAX_GLYPH_QUADS :: 4096
 VERTICES_PER_QUAD :: 4
 INDICES_PER_QUAD :: 6
@@ -7,28 +9,28 @@ MAX_GLYPH_VERTICES :: MAX_GLYPH_QUADS * VERTICES_PER_QUAD
 MAX_GLYPH_INDICES :: MAX_GLYPH_QUADS * INDICES_PER_QUAD
 
 DEFAULT_FONT_SIZE :: f32(18)
-DEFAULT_FG :: Color{0.92, 0.92, 0.95, 1.0}
-DEFAULT_BG :: Color{0.08, 0.08, 0.1, 1.0}
+DEFAULT_FG :: rfont.Color{0.92, 0.92, 0.95, 1.0}
+DEFAULT_BG :: rfont.Color{0.08, 0.08, 0.1, 1.0}
 
 Slug_Vertex :: struct {
 	pos: [4]f32,
 	tex: [4]f32,
 	jac: [4]f32,
 	bnd: [4]f32,
-	col: Color,
+	col: rfont.Color,
 }
 
 Renderer_Api :: struct {
 	font: struct {
 		path:       string,
-		data:       Font,
-		pack:       Texture_Pack_Result,
+		data:       rfont.Font,
+		pack:       rfont.Texture_Pack_Result,
 		glyph_count: int,
 	},
 	style: struct {
 		font_size:    f32,
-		fg:           Color,
-		bg:           Color,
+		fg:           rfont.Color,
+		bg:           rfont.Color,
 		line_spacing: f32,
 	},
 	view: struct {
@@ -70,7 +72,7 @@ init :: proc(r: ^Renderer_Api, allocator := context.allocator) -> bool {
 	r.status.last_error = ""
 
 	if r.font.path == "" {
-		r.font.path = DEFAULT_FONT_PATH
+		r.font.path = rfont.DEFAULT_FONT_PATH
 	}
 	if r.style.font_size <= 0 {
 		r.style.font_size = DEFAULT_FONT_SIZE
@@ -88,27 +90,27 @@ init :: proc(r: ^Renderer_Api, allocator := context.allocator) -> bool {
 		r.batch.max_glyphs = MAX_GLYPH_QUADS
 	}
 
-	loaded_font, font_ok := load(r.font.path, allocator)
+	loaded_font, font_ok := rfont.load(r.font.path, allocator)
 	if !font_ok {
 		r.status.last_error = "failed to load font"
 		return false
 	}
 	r.font.data = loaded_font
 
-	ascii_loaded := load_ascii(&r.font.data, allocator)
+	ascii_loaded := rfont.load_ascii(&r.font.data, allocator)
 	if ascii_loaded == 0 {
-		destroy(&r.font.data, allocator)
+		rfont.destroy(&r.font.data, allocator)
 		r.status.last_error = "failed to load ASCII glyphs"
 		return false
 	}
 	r.font.glyph_count = ascii_loaded
 
-	r.font.pack = process(&r.font.data, allocator)
+	r.font.pack = rfont.process(&r.font.data, allocator)
 	r.status.loaded = true
 
 	if !opengl_init(r) {
-		pack_destroy(&r.font.pack)
-		destroy(&r.font.data, allocator)
+		rfont.pack_destroy(&r.font.pack)
+		rfont.destroy(&r.font.data, allocator)
 		r.status.loaded = false
 		if r.status.last_error == "" {
 			r.status.last_error = "OpenGL renderer initialization failed"
@@ -123,8 +125,8 @@ init :: proc(r: ^Renderer_Api, allocator := context.allocator) -> bool {
 shutdown :: proc(r: ^Renderer_Api, allocator := context.allocator) {
 	assert(r != nil)
 	opengl_shutdown(r)
-	pack_destroy(&r.font.pack)
-	destroy(&r.font.data, allocator)
+	rfont.pack_destroy(&r.font.pack)
+	rfont.destroy(&r.font.data, allocator)
 	r^ = {}
 }
 
@@ -155,7 +157,7 @@ draw_text_line :: proc(r: ^Renderer_Api, line: string, x, baseline_y: f32) {
 			continue
 		}
 
-		g := get_glyph(&r.font.data, ch)
+		g := rfont.get_glyph(&r.font.data, ch)
 		if g == nil {
 			r.stats.glyph_lookup_misses += 1
 			pen_x += r.font.data.mono_advance * font_size
@@ -189,15 +191,15 @@ flush :: proc(r: ^Renderer_Api, draw_size: [2]i32) {
 
 line_height :: proc(r: ^Renderer_Api) -> f32 {
 	assert(r != nil && r.status.loaded)
-	return metrics_line_height(&r.font.data, r.style.font_size, r.style.line_spacing)
+	return rfont.metrics_line_height(&r.font.data, r.style.font_size, r.style.line_spacing)
 }
 
 @(private = "file")
 emit_glyph_quad :: proc(
 	r: ^Renderer_Api,
-	g: ^Glyph_Data,
+	g: ^rfont.Glyph_Data,
 	x, y, w, h: f32,
-	color: Color,
+	color: rfont.Color,
 ) {
 	assert(r != nil && g != nil)
 	assert(r.batch.quad_count < r.batch.max_glyphs)
@@ -223,10 +225,10 @@ emit_glyph_quad :: proc(
 	}
 
 	normals := [4][2]f32 {
-		{-DILATION_SCALE, -DILATION_SCALE},
-		{DILATION_SCALE, -DILATION_SCALE},
-		{DILATION_SCALE, DILATION_SCALE},
-		{-DILATION_SCALE, DILATION_SCALE},
+		{-rfont.DILATION_SCALE, -rfont.DILATION_SCALE},
+		{rfont.DILATION_SCALE, -rfont.DILATION_SCALE},
+		{rfont.DILATION_SCALE, rfont.DILATION_SCALE},
+		{-rfont.DILATION_SCALE, rfont.DILATION_SCALE},
 	}
 
 	em_coords := [4][2]f32 {

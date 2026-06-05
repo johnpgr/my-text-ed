@@ -1,4 +1,4 @@
-package renderer
+package font
 
 import "core:c"
 import "core:os"
