@@ -2,7 +2,7 @@ package font
 
 import stbtt "vendor:stb/truetype"
 
-DEFAULT_FONT_PATH :: "/home/joao/.fonts/ComicCode/Comic Code Regular.otf"
+DEFAULT_FONT_PATH :: "/home/joao/.fonts/liberation-fonts-ttf-1.05.3.20100621/LiberationMono-Regular.ttf"
 
 BAND_TEXTURE_WIDTH_LOG2 :: 12
 BAND_TEXTURE_WIDTH :: 1 << BAND_TEXTURE_WIDTH_LOG2 // 4096
