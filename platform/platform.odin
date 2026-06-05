@@ -156,6 +156,12 @@ Message_Box_Kind :: enum {
 	Error,
 }
 
+Memory_Stats :: struct {
+	virtual_bytes:  u64,
+	resident_bytes: u64,
+	ok:             bool,
+}
+
 @(private)
 _time_start: time.Time
 @(private)

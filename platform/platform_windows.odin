@@ -28,3 +28,7 @@ swap_buffers :: proc() {
 message_box :: proc(title, message: string, kind: Message_Box_Kind, has_display := true) {
 	// Stub for Windows
 }
+
+memory_stats :: proc() -> Memory_Stats {
+	return {}
+}

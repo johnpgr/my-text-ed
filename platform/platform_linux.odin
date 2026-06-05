@@ -4,6 +4,8 @@ import "core:c"
 import "core:strings"
 import "core:fmt"
 import "core:os"
+import "core:strconv"
+import posix "core:sys/posix"
 import "base:runtime"
 import gl "vendor:OpenGL"
 import "vendor:x11/xlib"
@@ -584,6 +586,53 @@ swap_buffers :: proc() {
 	}
 
 	glXSwapBuffers(_state.display, GLXDrawable(_state.window))
+}
+
+@(private)
+parse_statm_field :: proc(data: string, field_index: int) -> (u64, bool) {
+	if field_index < 0 do return 0, false
+
+	field := 0
+	start := 0
+	for i in 0 ..= len(data) {
+		at_end := i == len(data)
+		if !at_end && data[i] != ' ' && data[i] != '\n' && data[i] != '\r' && data[i] != '\t' {
+			continue
+		}
+		if i > start {
+			if field == field_index {
+				value, ok := strconv.parse_u64(data[start:i])
+				return value, ok
+			}
+			field += 1
+		}
+		start = i + 1
+	}
+	return 0, false
+}
+
+memory_stats :: proc() -> Memory_Stats {
+	stats: Memory_Stats
+
+	data, err := os.read_entire_file_from_path("/proc/self/statm", context.allocator)
+	if err != nil do return stats
+	defer delete(data)
+
+	size_pages, size_ok := parse_statm_field(string(data), 0)
+	resident_pages, resident_ok := parse_statm_field(string(data), 1)
+	if !size_ok || !resident_ok do return stats
+
+	page_size: u64 = 4096
+	when #defined(posix.PAGESIZE) {
+		page_size = u64(posix.PAGESIZE)
+	} else when ODIN_OS == .Linux {
+		page_size = u64(posix.sysconf(posix.SC._PAGE_SIZE))
+	}
+
+	stats.virtual_bytes = size_pages * page_size
+	stats.resident_bytes = resident_pages * page_size
+	stats.ok = true
+	return stats
 }
 
 @(private)

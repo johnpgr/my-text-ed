@@ -56,6 +56,13 @@ Renderer_Api :: struct {
 		initialized: bool,
 		last_error:  string,
 	},
+	stats: struct {
+		glyph_lookup_hits:   u64,
+		glyph_lookup_misses: u64,
+		glyphs_skipped:      u64,
+		glyph_quads_emitted: u64,
+		glyph_quads_dropped: u64,
+	},
 }
 
 init :: proc(r: ^Renderer_Api, allocator := context.allocator) -> bool {
@@ -124,6 +131,7 @@ shutdown :: proc(r: ^Renderer_Api, allocator := context.allocator) {
 begin :: proc(r: ^Renderer_Api) {
 	assert(r != nil && r.status.initialized)
 	r.batch.quad_count = 0
+	r.stats = {}
 }
 
 draw_text_line :: proc(r: ^Renderer_Api, line: string, x, baseline_y: f32) {
@@ -142,21 +150,31 @@ draw_text_line :: proc(r: ^Renderer_Api, line: string, x, baseline_y: f32) {
 			continue
 		}
 
-		if ch > 126 do continue
+		if ch > 126 {
+			r.stats.glyphs_skipped += 1
+			continue
+		}
 
 		g := get_glyph(&r.font.data, ch)
 		if g == nil {
+			r.stats.glyph_lookup_misses += 1
 			pen_x += r.font.data.mono_advance * font_size
 			continue
 		}
+
+		r.stats.glyph_lookup_hits += 1
 
 		glyph_x := pen_x + g.bbox_min.x * font_size
 		glyph_y := baseline_y - g.bbox_max.y * font_size
 		glyph_w := (g.bbox_max.x - g.bbox_min.x) * font_size
 		glyph_h := (g.bbox_max.y - g.bbox_min.y) * font_size
 
-		if len(g.curves) > 0 && r.batch.quad_count < r.batch.max_glyphs {
-			emit_glyph_quad(r, g, glyph_x, glyph_y, glyph_w, glyph_h, color)
+		if len(g.curves) > 0 {
+			if r.batch.quad_count < r.batch.max_glyphs {
+				emit_glyph_quad(r, g, glyph_x, glyph_y, glyph_w, glyph_h, color)
+			} else {
+				r.stats.glyph_quads_dropped += 1
+			}
 		}
 
 		pen_x += g.advance_width * font_size
@@ -229,4 +247,5 @@ emit_glyph_quad :: proc(
 	}
 
 	r.batch.quad_count += 1
+	r.stats.glyph_quads_emitted += 1
 }

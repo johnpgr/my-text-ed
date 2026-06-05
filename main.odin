@@ -7,6 +7,7 @@ import "core:mem"
 import "core:os"
 import "platform"
 import "renderer"
+import "stats"
 import "core:mem/virtual"
 import gl "vendor:OpenGL"
 
@@ -81,6 +82,8 @@ main :: proc() {
 	fmt.println("Press 'V' to toggle VSync. Esc to quit.")
 
 	scroll_page_lines: f32 = 20
+	debug_title: stats.Debug_Title_State
+	stats.reset_sample(&debug_title)
 
 	for !p.quit {
 		scratch_arena, temp_allocator := arena.begin_scratch(&main_arena)
@@ -151,5 +154,28 @@ main :: proc() {
 
 		renderer.flush(&r, p.draw.size)
 		platform.swap_buffers()
+
+		stats.accumulate_frame(&debug_title, f32(p.time.now.ms_delta), stats.Frame_Stats {
+			glyph_lookup_hits   = r.stats.glyph_lookup_hits,
+			glyph_lookup_misses = r.stats.glyph_lookup_misses,
+			glyphs_skipped      = r.stats.glyphs_skipped,
+			glyph_quads_emitted = r.stats.glyph_quads_emitted,
+			glyph_quads_dropped = r.stats.glyph_quads_dropped,
+		})
+		if p.time.now.ms - debug_title.last_update_ms >= stats.TITLE_INTERVAL_MS {
+			mem := platform.memory_stats()
+			p.window.title = stats.update_title(
+				&debug_title,
+				{
+					now_ms           = p.time.now.ms,
+					draw_width       = p.draw.size.x,
+					draw_height      = p.draw.size.y,
+					max_batch_glyphs = r.batch.max_glyphs,
+					memory           = {mem.virtual_bytes, mem.resident_bytes, mem.ok},
+					arena_used       = main_arena.total_used,
+					arena_reserved   = main_arena.total_reserved,
+				},
+			)
+		}
 	}
 }
