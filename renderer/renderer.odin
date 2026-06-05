@@ -9,15 +9,15 @@ MAX_GLYPH_VERTICES :: MAX_GLYPH_QUADS * VERTICES_PER_QUAD
 MAX_GLYPH_INDICES :: MAX_GLYPH_QUADS * INDICES_PER_QUAD
 
 DEFAULT_FONT_SIZE :: f32(18)
-DEFAULT_FG :: rfont.Color{0.92, 0.92, 0.95, 1.0}
-DEFAULT_BG :: rfont.Color{0.08, 0.08, 0.1, 1.0}
+DEFAULT_FG :: Color{0.92, 0.92, 0.95, 1.0}
+DEFAULT_BG :: Color{0.08, 0.08, 0.1, 1.0}
 
 Slug_Vertex :: struct {
 	pos: [4]f32,
 	tex: [4]f32,
 	jac: [4]f32,
 	bnd: [4]f32,
-	col: rfont.Color,
+	col: Color,
 }
 
 Renderer_Api :: struct {
@@ -29,8 +29,8 @@ Renderer_Api :: struct {
 	},
 	style: struct {
 		font_size:    f32,
-		fg:           rfont.Color,
-		bg:           rfont.Color,
+		fg:           Color,
+		bg:           Color,
 		line_spacing: f32,
 	},
 	view: struct {
@@ -199,7 +199,7 @@ emit_glyph_quad :: proc(
 	r: ^Renderer_Api,
 	g: ^rfont.Glyph_Data,
 	x, y, w, h: f32,
-	color: rfont.Color,
+	color: Color,
 ) {
 	assert(r != nil && g != nil)
 	assert(r.batch.quad_count < r.batch.max_glyphs)

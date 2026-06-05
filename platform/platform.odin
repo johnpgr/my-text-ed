@@ -2,9 +2,6 @@ package platform
 
 import "core:time"
 
-Vec2  :: [2]i32
-Vec2f :: [2]f32
-
 Time_Info :: struct {
 	seconds_delta: f32,
 	seconds:       f64,
