@@ -169,6 +169,7 @@ init_time :: proc() {
 
 @(private)
 update_time :: proc() {
+	assert(_state.api != nil)
 	now := time.now()
 	diff := time.diff(_time_last, now)
 	_time_last = now
@@ -209,6 +210,7 @@ update_time :: proc() {
 
 @(private)
 reset_frame_transitions :: proc() {
+	assert(_state.api != nil)
 	for i in 0..<len(_state.api.keys) {
 		_state.api.keys[i].is_pressed = false
 		_state.api.keys[i].is_pressed_repeat = false

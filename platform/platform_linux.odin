@@ -211,6 +211,7 @@ apply_resizable :: proc(resizable: bool) {
 }
 
 init :: proc(p_api: ^Platform_Api) -> bool {
+	assert(p_api != nil)
 	_state.api = p_api
 	_state.odin_context = context
 	_state.last.vsync = _state.api.opengl.vsync
@@ -434,6 +435,7 @@ shutdown :: proc() {
 
 update :: proc() {
 	if _state.display == nil do return
+	assert(_state.api != nil)
 
 	reset_frame_transitions()
 	old_mouse := _state.api.mouse.position
@@ -572,9 +574,9 @@ update :: proc() {
 }
 
 swap_buffers :: proc() {
-	ensure(_state.display != nil)
-	ensure(_state.window != 0)
-	ensure(_state.gl_context != nil)
+	assert(_state.display != nil)
+	assert(_state.window != 0)
+	assert(_state.gl_context != nil)
 
 	if _state.api.opengl.vsync != _state.last.vsync {
 		_state.last.vsync = _state.api.opengl.vsync
