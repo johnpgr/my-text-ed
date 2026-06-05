@@ -10,8 +10,8 @@ import "renderer"
 import "core:mem/virtual"
 import gl "vendor:OpenGL"
 
-api: platform.Platform_Api
-r_api: renderer.Renderer_Api
+p: platform.Platform_Api
+r: renderer.Renderer_Api
 
 FALLBACK_TEXT :: "my-text-ed: pass a file path to render text (e.g. TODO.md)"
 
@@ -45,19 +45,19 @@ main :: proc() {
 	}
 
 	{
-		scratch_arena, temp_allocator := arena.begin_scratch(&main_arena.arena)
+		scratch_arena, temp_allocator := arena.begin_scratch(&main_arena)
 		defer arena.end_scratch(scratch_arena)
 		context.temp_allocator = temp_allocator
 
-		api.window.title = "my-text-ed"
-		api.window.size = {960, 540}
-		api.window.resizable = true
-		api.opengl.major = 4
-		api.opengl.minor = 6
-		api.opengl.debug_context = true
-		api.opengl.vsync = true
+		p.window.title = "my-text-ed"
+		p.window.size = {960, 540}
+		p.window.resizable = true
+		p.opengl.major = 4
+		p.opengl.minor = 6
+		p.opengl.debug_context = true
+		p.opengl.vsync = true
 
-		if !platform.init(&api) {
+		if !platform.init(&p) {
 			fmt.eprintln("Failed to initialize platform")
 			os.exit(1)
 		}
@@ -65,58 +65,53 @@ main :: proc() {
 
 	defer platform.shutdown()
 
-	r_api.style.font_size = 18
-	r_api.style.fg = {0.92, 0.92, 0.95, 1.0}
-	r_api.style.bg = {0.08, 0.08, 0.1, 1.0}
-	r_api.style.line_spacing = 1.0
+	r.style.font_size = 18
+	r.style.fg = {0.92, 0.92, 0.95, 1.0}
+	r.style.bg = {0.08, 0.08, 0.1, 1.0}
+	r.style.line_spacing = 1.0
 
-	if !renderer.init(&r_api, allocator) {
-		fmt.eprintln(r_api.status.last_error)
+	if !renderer.init(&r, allocator) {
+		fmt.eprintln(r.status.last_error)
 		os.exit(1)
 	}
-	defer renderer.shutdown(&r_api, allocator)
+	defer renderer.shutdown(&r, allocator)
 
 	fmt.println("Platform & OpenGL initialized successfully!")
-	fmt.printf("Loaded %d ASCII glyphs from %s\n", r_api.font.glyph_count, r_api.font.path)
+	fmt.printf("Loaded %d ASCII glyphs from %s\n", r.font.glyph_count, r.font.path)
 	fmt.println("Press 'V' to toggle VSync. Esc to quit.")
-	if has_file {
-		fmt.printf("Rendering %d lines from %s\n", len(text_buf.lines), text_buf.filepath)
-	} else {
-		fmt.println(FALLBACK_TEXT)
-	}
 
 	scroll_page_lines: f32 = 20
 
-	for !api.quit {
-		scratch_arena, temp_allocator := arena.begin_scratch(&main_arena.arena)
+	for !p.quit {
+		scratch_arena, temp_allocator := arena.begin_scratch(&main_arena)
 		defer arena.end_scratch(scratch_arena)
 		context.temp_allocator = temp_allocator
 
 		platform.update()
 
-		if api.keys[platform.Key_Code.Esc].is_pressed {
-			api.quit = true
+		if p.keys[platform.Key_Code.Esc].is_pressed {
+			p.quit = true
 		}
 
-		if api.keys[platform.Key_Code.V].is_pressed {
-			api.opengl.vsync = !api.opengl.vsync
-			fmt.printf("Toggled VSync. New state: %v\n", api.opengl.vsync)
+		if p.keys[platform.Key_Code.V].is_pressed {
+			p.opengl.vsync = !p.opengl.vsync
+			fmt.printf("Toggled VSync. New state: %v\n", p.opengl.vsync)
 		}
 
-		line_h := renderer.line_height(&r_api)
+		line_h := renderer.line_height(&r)
 		scroll_delta: f32 = 0
 
-		if api.mouse.wheel_delta != 0 {
-			scroll_delta -= api.mouse.wheel_delta * line_h * 3
+		if p.mouse.wheel_delta != 0 {
+			scroll_delta -= p.mouse.wheel_delta * line_h * 3
 		}
-		if api.keys[platform.Key_Code.Page_Up].is_pressed {
+		if p.keys[platform.Key_Code.Page_Up].is_pressed {
 			scroll_delta -= line_h * scroll_page_lines
 		}
-		if api.keys[platform.Key_Code.Page_Down].is_pressed {
+		if p.keys[platform.Key_Code.Page_Down].is_pressed {
 			scroll_delta += line_h * scroll_page_lines
 		}
 
-		r_api.view.scroll_y += scroll_delta
+		r.view.scroll_y += scroll_delta
 
 		line_count := 1
 		if has_file {
@@ -124,37 +119,37 @@ main :: proc() {
 		}
 
 		content_height := f32(line_count) * line_h
-		max_scroll := max(0, content_height - f32(api.draw.size.y))
-		r_api.view.scroll_y = clamp(r_api.view.scroll_y, 0, max_scroll)
+		max_scroll := max(0, content_height - f32(p.draw.size.y))
+		r.view.scroll_y = clamp(r.view.scroll_y, 0, max_scroll)
 
-		bg := r_api.style.bg
+		bg := r.style.bg
 		gl.ClearColor(bg[0], bg[1], bg[2], bg[3])
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
-		renderer.begin(&r_api)
+		renderer.begin(&r)
 
 		margin_x: f32 = 8
-		first_line := int(r_api.view.scroll_y / line_h)
+		first_line := int(r.view.scroll_y / line_h)
 		overscan := 1
 		last_line := min(
 			line_count - 1,
-			first_line + int(f32(api.draw.size.y) / line_h) + overscan,
+			first_line + int(f32(p.draw.size.y) / line_h) + overscan,
 		)
 
 		for line_idx in first_line ..= last_line {
 			baseline_y :=
 				f32(line_idx) * line_h -
-				r_api.view.scroll_y +
-				r_api.font.data.ascent * r_api.style.font_size
+				r.view.scroll_y +
+				r.font.data.ascent * r.style.font_size
 
 			if has_file {
-				renderer.draw_text_line(&r_api, text_buf.lines[line_idx], margin_x, baseline_y)
+				renderer.draw_text_line(&r, text_buf.lines[line_idx], margin_x, baseline_y)
 			} else if line_idx == 0 {
-				renderer.draw_text_line(&r_api, FALLBACK_TEXT, margin_x, baseline_y)
+				renderer.draw_text_line(&r, FALLBACK_TEXT, margin_x, baseline_y)
 			}
 		}
 
-		renderer.flush(&r_api, api.draw.size)
+		renderer.flush(&r, p.draw.size)
 		platform.swap_buffers()
 	}
 }

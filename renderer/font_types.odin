@@ -5,7 +5,7 @@ import stbtt "vendor:stb/truetype"
 Vec2f :: [2]f32
 Color :: [4]f32
 
-DEFAULT_FONT_PATH :: "/home/joao/.fonts/PragmataPro/PragmataPro.ttf"
+DEFAULT_FONT_PATH :: "/home/joao/.fonts/ComicCode/Comic Code Regular.otf"
 
 BAND_TEXTURE_WIDTH_LOG2 :: 12
 BAND_TEXTURE_WIDTH :: 1 << BAND_TEXTURE_WIDTH_LOG2 // 4096
